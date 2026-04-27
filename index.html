@@ -329,7 +329,8 @@
   let currentUrl = null;
   let currentFitnessMode = true;
   let currentContext = '';
-  let discoverPageToken = null;
+  discoverPageToken = data.nextPageToken || null;
+console.log('nextPageToken received:', data.nextPageToken);
   let discoverLastQuery = null;
   let discoverLastCount = 5;
   let discoverLastOrder = 'date';
