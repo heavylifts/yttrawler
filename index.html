@@ -567,7 +567,9 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
+      console.log('Discover response:', JSON.stringify({nextPageToken: data.nextPageToken, videoCount: data.videos?.length}));
       discoverPageToken = data.nextPageToken || null;
+      console.log('discoverPageToken set to:', discoverPageToken);
       renderDiscoverResults(data, fitnessMode, context, false);
       setDiscoverStatus('');
     } catch (err) {
