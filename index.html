@@ -654,6 +654,10 @@
       </div>`;
     }).join('');
 
+    const nextBtn = document.getElementById('nextPageBtn');
+    nextBtn.style.display = nextPageToken ? 'block' : 'none';
+    nextBtn.disabled = false;
+
     document.getElementById('discoverResults').style.display = 'block';
   }
 
