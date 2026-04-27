@@ -5,647 +5,670 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YTtrawler</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --border: #222222;
-    --accent: #e8ff00;
-    --accent2: #ff4444;
-    --text: #e8e8e8;
-    --muted: #666;
-    --mono: 'Space Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
+    --bg: #0d0d0d; --surface: #141414; --border: #1f1f1f; --border-bright: #2a2a2a;
+    --text: #e8e8e8; --text-dim: #666; --text-mid: #999;
+    --accent: #c8f135; --accent-dim: rgba(200,241,53,0.12); --accent-border: rgba(200,241,53,0.25);
+    --red: #ff4d4d; --red-dim: rgba(255,77,77,0.1);
+    --amber: #ffb347; --amber-dim: rgba(255,179,71,0.1);
+    --blue: #5b9cf6; --blue-dim: rgba(91,156,246,0.1);
+    --font-mono: 'IBM Plex Mono', monospace; --font-sans: 'IBM Plex Sans', sans-serif;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); min-height: 100vh; padding: 0 0 80px; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    padding: 0 16px;
-  }
+  header { border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
+  .logo { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; }
+  .logo-slash { color: var(--border-bright); margin: 0 4px; }
+  .tagline { font-size: 11px; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.06em; }
 
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 24px 0 20px;
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-  }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .tab { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 14px 20px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+  .tab:hover { color: var(--text-mid); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  header h1 {
-    font-family: var(--mono);
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--accent);
-  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  main { max-width: 780px; margin: 0 auto; padding: 48px 32px 0; }
 
-  header span {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
+  /* MODE TOGGLE */
+  .mode-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--border-bright); border-radius: 3px; background: var(--surface); margin-bottom: 20px; }
+  .mode-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; flex-shrink: 0; }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--border-bright); border-radius: 20px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: var(--text-dim); border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+  .toggle input:checked + .toggle-slider { background: var(--accent-dim); border: 1px solid var(--accent-border); }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--accent); }
+  .toggle-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
+  .toggle-text.active-mode { color: var(--accent); }
+  .context-input { flex: 1; background: transparent; border: none; border-left: 1px solid var(--border-bright); outline: none; padding: 0 0 0 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+  .context-input::placeholder { color: var(--text-dim); }
+  .context-wrap { flex: 1; display: none; }
+  .context-wrap.visible { display: flex; align-items: center; }
 
-  .container {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 32px 0 64px;
-  }
+  .input-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; display: block; }
+  .url-row { display: flex; border: 1px solid var(--border-bright); border-radius: 3px; overflow: hidden; transition: border-color 0.15s; }
+  .url-row:focus-within { border-color: var(--accent); }
+  .url-input { flex: 1; background: var(--surface); border: none; outline: none; padding: 14px 16px; font-family: var(--font-mono); font-size: 13px; color: var(--text); min-width: 0; }
+  .url-input::placeholder { color: var(--text-dim); }
+  .btn-primary { background: var(--accent); color: #0d0d0d; border: none; padding: 14px 24px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .input-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
+  .discover-row { display: grid; grid-template-columns: 1fr auto auto; border: 1px solid var(--border-bright); border-radius: 3px; overflow: hidden; transition: border-color 0.15s; margin-bottom: 12px; }
+  .discover-row:focus-within { border-color: var(--accent); }
+  .discover-input { background: var(--surface); border: none; outline: none; padding: 14px 16px; font-family: var(--font-mono); font-size: 13px; color: var(--text); min-width: 0; }
+  .discover-input::placeholder { color: var(--text-dim); }
+  .count-select, .order-select { background: var(--surface); border: none; border-left: 1px solid var(--border-bright); outline: none; padding: 14px 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-mid); cursor: pointer; }
 
-  input[type="text"] {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    padding: 12px 14px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
+  .status { margin-top: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); min-height: 16px; display: flex; align-items: center; gap: 8px; }
+  .spinner { width: 8px; height: 8px; border: 1.5px solid var(--border-bright); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .spinner.active { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  input[type="text"]:focus {
-    border-color: var(--accent);
-  }
+  .error-card { border: 1px solid rgba(255,77,77,0.25); background: var(--red-dim); border-radius: 3px; padding: 16px 20px; font-family: var(--font-mono); font-size: 12px; color: var(--red); display: none; margin-bottom: 24px; }
+  .error-card.visible { display: block; }
 
-  input[type="text"]::placeholder {
-    color: var(--muted);
-  }
+  .triage-card { border: 1px solid var(--border-bright); border-radius: 3px; overflow: hidden; margin-bottom: 24px; opacity: 0; transform: translateY(8px); transition: opacity 0.3s, transform 0.3s; }
+  .triage-card.visible { opacity: 1; transform: translateY(0); }
+  .triage-header { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .video-meta { flex: 1; min-width: 0; }
+  .video-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .video-channel { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+  .verdict-badge { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 10px; border-radius: 2px; white-space: nowrap; flex-shrink: 0; }
+  .verdict-watch { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border); }
+  .verdict-skim  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,179,71,0.25); }
+  .verdict-skip  { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,77,77,0.25); }
+  .mode-pill { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; margin-left: 8px; }
+  .mode-fitness { background: var(--accent-dim); color: var(--accent); }
+  .mode-general { background: var(--blue-dim); color: var(--blue); }
+  .triage-body { padding: 20px; }
+  .triage-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .triage-field label { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .triage-field p { font-size: 13px; color: var(--text); line-height: 1.55; }
+  .quality-badge { display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.06em; }
+  .quality-evidence { background: var(--accent-dim); color: var(--accent); }
+  .quality-mixed    { background: var(--blue-dim); color: var(--blue); }
+  .quality-anecdote { background: var(--amber-dim); color: var(--amber); }
+  .quality-bro      { background: var(--red-dim); color: var(--red); }
+  .topics-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .topic-chip { font-family: var(--font-mono); font-size: 10px; color: var(--text-mid); border: 1px solid var(--border-bright); padding: 3px 8px; border-radius: 2px; }
+  .extract-row { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); }
+  .extract-row p { font-size: 12px; color: var(--text-dim); flex: 1; }
+  .btn-extract { background: transparent; color: var(--accent); border: 1px solid var(--accent-border); padding: 9px 18px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  .btn-extract:hover { background: var(--accent-dim); }
+  .btn-extract:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .btn {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 12px 16px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
+  .extract-card { border: 1px solid var(--border-bright); border-radius: 3px; overflow: hidden; opacity: 0; transform: translateY(8px); transition: opacity 0.3s, transform 0.3s; }
+  .extract-card.visible { opacity: 1; transform: translateY(0); }
+  .extract-section { border-bottom: 1px solid var(--border); padding: 20px; }
+  .extract-section:last-child { border-bottom: none; }
+  .section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .item-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .item-list li { font-size: 13px; color: var(--text); line-height: 1.55; padding-left: 16px; position: relative; }
+  .item-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-family: var(--font-mono); }
+  .ref-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; }
+  .ref-type { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); border: 1px solid var(--border-bright); padding: 2px 6px; border-radius: 2px; white-space: nowrap; margin-top: 2px; flex-shrink: 0; }
+  .ref-content { flex: 1; }
+  .ref-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .ref-context { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .ref-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px; }
+  .flag-item { background: var(--red-dim); border: 1px solid rgba(255,77,77,0.15); border-radius: 2px; padding: 10px 12px; font-size: 12px; color: var(--text-mid); line-height: 1.5; margin-bottom: 8px; }
+  .notion-link { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-bright); border-radius: 2px; transition: border-color 0.15s, color 0.15s; margin-top: 4px; }
+  .notion-link:hover { border-color: var(--accent-border); color: var(--accent); }
+  .empty-state { font-size: 12px; color: var(--text-dim); font-style: italic; }
 
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
+  .discover-results { margin-top: 24px; }
+  .results-header { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .results-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .video-card { border: 1px solid var(--border-bright); border-radius: 3px; overflow: hidden; margin-bottom: 12px; display: grid; grid-template-columns: 160px 1fr; transition: border-color 0.15s; }
+  .video-thumb { width: 160px; height: 90px; object-fit: cover; display: block; background: var(--surface); }
+  .video-thumb-placeholder { width: 160px; height: 90px; background: var(--surface); display: flex; align-items: center; justify-content: center; }
+  .video-info { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+  .video-card-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .video-card-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); display: flex; gap: 12px; flex-wrap: wrap; }
+  .video-card-actions { display: flex; gap: 8px; margin-top: auto; }
+  .btn-card-triage { background: var(--accent); color: #0d0d0d; border: none; padding: 6px 14px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: opacity 0.15s; }
+  .btn-card-triage:hover { opacity: 0.85; }
+  .btn-card-url { background: transparent; color: var(--text-dim); border: 1px solid var(--border-bright); padding: 6px 14px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-radius: 2px; text-decoration: none; display: inline-flex; align-items: center; transition: border-color 0.15s, color 0.15s; }
+  .btn-card-url:hover { border-color: var(--accent-border); color: var(--accent); }
 
-  .btn-primary:hover:not(:disabled) {
-    background: #fff;
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .mode-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  /* Status */
-  .status {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 16px;
-    min-height: 16px;
-    letter-spacing: 0.05em;
-  }
-
-  .status.loading { color: var(--accent); }
-  .status.error { color: var(--accent2); }
-
-  /* Results */
-  #results {
-    margin-top: 32px;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    margin-bottom: 2px;
-  }
-
-  .card-header {
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .card-header:hover {
-    background: var(--surface2);
-  }
-
-  .card-label {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .card-chevron {
-    font-size: 0.6rem;
-    color: var(--muted);
-    transition: transform 0.2s;
-  }
-
-  .card.open .card-chevron {
-    transform: rotate(180deg);
-  }
-
-  .card-body {
-    display: none;
-    padding: 0 16px 16px;
-    border-top: 1px solid var(--border);
-  }
-
-  .card.open .card-body {
-    display: block;
-  }
-
-  /* Verdict banner */
-  .verdict-banner {
-    padding: 20px 16px;
-    margin-bottom: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .verdict-watch { background: #0a1f0a; border: 1px solid #1a4d1a; }
-  .verdict-skim  { background: #1a1500; border: 1px solid #4d3d00; }
-  .verdict-skip  { background: #1f0a0a; border: 1px solid #4d1a1a; }
-
-  .verdict-label {
-    font-family: var(--mono);
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .verdict-watch .verdict-label { color: #4ade80; }
-  .verdict-skim  .verdict-label { color: #facc15; }
-  .verdict-skip  .verdict-label { color: var(--accent2); }
-
-  .verdict-meta {
-    text-align: right;
-  }
-
-  .verdict-reason {
-    font-size: 0.8rem;
-    color: var(--muted);
-    max-width: 300px;
-    line-height: 1.4;
-  }
-
-  .verdict-time {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-
-  /* Video meta */
-  .video-meta {
-    padding: 12px 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    margin-bottom: 2px;
-    display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-
-  .meta-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .meta-key {
-    font-family: var(--mono);
-    font-size: 0.55rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .meta-val {
-    font-size: 0.85rem;
-    color: var(--text);
-  }
-
-  /* Tags */
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding-top: 12px;
-  }
-
-  .tag {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    padding: 3px 8px;
-    letter-spacing: 0.05em;
-  }
-
-  .tag-on {
-    background: #0a1a0a;
-    color: #4ade80;
-    border: 1px solid #1a4d1a;
-  }
-
-  .tag-off {
-    background: var(--surface2);
-    color: var(--muted);
-    border: 1px solid var(--border);
-    text-decoration: line-through;
-  }
-
-  .tag-warn {
-    background: #1f0a0a;
-    color: var(--accent2);
-    border: 1px solid #4d1a1a;
-  }
-
-  /* Text content */
-  .card-body p {
-    font-size: 0.875rem;
-    line-height: 1.6;
-    color: #ccc;
-    padding-top: 14px;
-  }
-
-  .card-body ul {
-    padding-top: 14px;
-    padding-left: 0;
-    list-style: none;
-  }
-
-  .card-body ul li {
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: #ccc;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    gap: 10px;
-  }
-
-  .card-body ul li:last-child {
-    border-bottom: none;
-  }
-
-  .li-bullet {
-    color: var(--accent);
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-
-  .li-warn {
-    color: var(--accent2);
-  }
-
-  /* Refs */
-  .ref-group {
-    padding-top: 14px;
-  }
-
-  .ref-label {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  .ref-item {
-    font-size: 0.85rem;
-    color: #ccc;
-    padding: 4px 0;
-  }
-
-  /* Extract button */
-  .extract-prompt {
-    margin-top: 16px;
-    padding: 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .extract-prompt p {
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-
-  /* Notion badge */
-  .notion-badge {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--muted);
-    margin-top: 16px;
-    letter-spacing: 0.05em;
-  }
-
-  .notion-badge.saved {
-    color: #4ade80;
-  }
-
-  /* Divider */
-  .section-divider {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--muted);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin: 24px 0 12px;
+  @media (max-width: 600px) {
+    main { padding: 32px 16px 0; } header { padding: 16px; } .tabs { padding: 0 16px; }
+    .triage-row { grid-template-columns: 1fr; } .video-card { grid-template-columns: 1fr; }
+    .video-thumb, .video-thumb-placeholder { width: 100%; height: 180px; }
+    .discover-row { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
-<div style="max-width:680px;margin:0 auto;">
-  <header>
-    <h1>YTtrawler</h1>
-    <span>signal extraction from noise</span>
-  </header>
+<header>
+  <div><div class="logo">YT<span class="logo-slash">/</span>trawler</div></div>
+  <div class="tagline">signal extraction from video noise</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('triage')">Triage</div>
+  <div class="tab" onclick="switchTab('discover')">Discover</div>
 </div>
 
-<div class="container">
+<!-- ── TRIAGE PANEL ── -->
+<div id="panel-triage" class="panel active">
+<main>
 
-  <div class="input-row">
-    <input type="text" id="urlInput" placeholder="paste youtube url" autocomplete="off" autocorrect="off" spellcheck="false" />
+  <!-- MODE TOGGLE -->
+  <div class="mode-bar">
+    <span class="mode-label">Mode</span>
+    <div class="toggle-wrap">
+      <label class="toggle">
+        <input type="checkbox" id="fitnessModeToggle" checked onchange="updateModeUI()">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-text active-mode" id="modeToggleLabel">Fitness / PT</span>
+    </div>
+    <div class="context-wrap" id="contextWrap">
+      <input type="text" class="context-input" id="contextInput" placeholder="Research context e.g. rucking club navigation, wilderness first aid...">
+    </div>
   </div>
 
-  <div class="mode-row">
-    <button class="btn btn-primary" id="triageBtn" onclick="runTriage()">→ Triage</button>
-    <button class="btn btn-secondary" id="extractBtn" onclick="runExtract()" disabled>↓ Deep Extract</button>
+  <div style="margin-bottom: 48px;">
+    <span class="input-label">YouTube URL</span>
+    <div class="url-row">
+      <input type="text" class="url-input" id="urlInput" placeholder="https://youtube.com/watch?v=..." autocomplete="off" spellcheck="false">
+      <button class="btn-primary" id="triageBtn" onclick="runTriage()">Triage</button>
+    </div>
+    <div class="status" id="triageStatus">
+      <div class="spinner" id="triageSpinner"></div>
+      <span id="triageStatusText"></span>
+    </div>
   </div>
 
-  <div class="status" id="status"></div>
+  <div class="error-card" id="triageError"></div>
 
-  <div id="results"></div>
+  <div class="triage-card" id="triageCard">
+    <div class="triage-header">
+      <div class="video-meta">
+        <div class="video-title" id="videoTitle"></div>
+        <div class="video-channel" id="videoChannel"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span class="mode-pill" id="triageModePill"></span>
+        <div class="verdict-badge" id="verdictBadge"></div>
+      </div>
+    </div>
+    <div class="triage-body">
+      <div class="triage-row">
+        <div class="triage-field" style="grid-column: 1 / -1;">
+          <label>Summary</label>
+          <p id="triageSummary"></p>
+        </div>
+      </div>
+      <div class="triage-row">
+        <div class="triage-field">
+          <label>Verdict reason</label>
+          <p id="verdictReason"></p>
+        </div>
+        <div class="triage-field">
+          <label>Quality signal</label>
+          <div id="qualityBadge"></div>
+          <p id="qualityNotes" style="margin-top: 8px;"></p>
+        </div>
+      </div>
+      <div class="triage-field">
+        <label>Topics</label>
+        <div class="topics-row" id="topicsRow"></div>
+      </div>
+    </div>
+    <div class="extract-row">
+      <p>Full transcript analysis → Notion log</p>
+      <button class="btn-extract" id="extractBtn" onclick="runExtract()">Deep Extract →</button>
+    </div>
+  </div>
 
+  <div class="extract-card" id="extractCard">
+    <div class="extract-section" id="notionSection" style="display:none;">
+      <div class="section-title">Logged to Notion</div>
+      <a class="notion-link" id="notionLink" href="#" target="_blank">↗ Open in Notion</a>
+    </div>
+    <div class="extract-section">
+      <div class="section-title">Key Claims</div>
+      <ul class="item-list" id="keyClaimsList"></ul>
+    </div>
+    <div class="extract-section">
+      <div class="section-title">References</div>
+      <div id="referencesList"></div>
+    </div>
+    <div class="extract-section">
+      <div class="section-title" id="ideasSectionTitle">Coaching Ideas</div>
+      <ul class="item-list" id="ideasList"></ul>
+    </div>
+    <div class="extract-section">
+      <div class="section-title">Content Hooks</div>
+      <ul class="item-list" id="contentHooksList"></ul>
+    </div>
+    <div class="extract-section">
+      <div class="section-title">Research Questions</div>
+      <ul class="item-list" id="researchList"></ul>
+    </div>
+    <div class="extract-section">
+      <div class="section-title">🚩 Bro-Science Flags</div>
+      <div id="broScienceList"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ── DISCOVER PANEL ── -->
+<div id="panel-discover" class="panel">
+<main>
+
+  <!-- MODE TOGGLE (discover) -->
+  <div class="mode-bar">
+    <span class="mode-label">Mode</span>
+    <div class="toggle-wrap">
+      <label class="toggle">
+        <input type="checkbox" id="discoverFitnessModeToggle" checked onchange="updateDiscoverModeUI()">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-text active-mode" id="discoverModeToggleLabel">Fitness / PT</span>
+    </div>
+    <div class="context-wrap" id="discoverContextWrap">
+      <input type="text" class="context-input" id="discoverContextInput" placeholder="Research context e.g. rucking club navigation, wilderness first aid...">
+    </div>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+    <span class="input-label">Search YouTube</span>
+    <div class="discover-row">
+      <input type="text" class="discover-input" id="discoverInput" placeholder="e.g. rucking for older men, map and compass navigation..." autocomplete="off" spellcheck="false">
+      <select class="count-select" id="countSelect">
+        <option value="3">3 videos</option>
+        <option value="5" selected>5 videos</option>
+        <option value="10">10 videos</option>
+        <option value="15">15 videos</option>
+      </select>
+      <select class="order-select" id="orderSelect">
+        <option value="date">Most recent</option>
+        <option value="relevance">Most relevant</option>
+        <option value="viewCount">Most viewed</option>
+        <option value="rating">Top rated</option>
+      </select>
+    </div>
+    <div style="display:flex;">
+      <button class="btn-primary" id="discoverBtn" onclick="runDiscover()">Search</button>
+    </div>
+    <div class="status" id="discoverStatus">
+      <div class="spinner" id="discoverSpinner"></div>
+      <span id="discoverStatusText"></span>
+    </div>
+  </div>
+
+  <div class="error-card" id="discoverError"></div>
+
+  <div class="discover-results" id="discoverResults" style="display:none;">
+    <div class="results-header" id="resultsHeader"></div>
+    <div id="videoCards"></div>
+  </div>
+
+</main>
 </div>
 
 <script>
-  const WORKER_URL = 'https://yttrawler-proxy.YOUR_SUBDOMAIN.workers.dev';
+  const WORKER_URL = 'https://yttrawler-proxy.ian-mcarthur.workers.dev';
 
-  let currentUrl = '';
-  let triageDone = false;
+  let currentTriageData = null;
+  let currentUrl = null;
+  let currentFitnessMode = true;
+  let currentContext = '';
+  let discoverPageToken = null;
+  let discoverLastQuery = null;
+  let discoverLastCount = 5;
+  let discoverLastOrder = 'date';
+  let discoverLastFitnessMode = true;
+  let discoverLastContext = '';
 
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = 'status ' + type;
+  // ── TABS ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`panel-${tab}`).classList.add('active');
   }
 
-  function setLoading(loading) {
+  // ── MODE UI ──
+  function updateModeUI() {
+    const on = document.getElementById('fitnessModeToggle').checked;
+    const label = document.getElementById('modeToggleLabel');
+    const ctxWrap = document.getElementById('contextWrap');
+    label.textContent = on ? 'Fitness / PT' : 'General';
+    label.className = 'toggle-text ' + (on ? 'active-mode' : '');
+    ctxWrap.classList.toggle('visible', !on);
+  }
+
+  function updateDiscoverModeUI() {
+    const on = document.getElementById('discoverFitnessModeToggle').checked;
+    const label = document.getElementById('discoverModeToggleLabel');
+    const ctxWrap = document.getElementById('discoverContextWrap');
+    label.textContent = on ? 'Fitness / PT' : 'General';
+    label.className = 'toggle-text ' + (on ? 'active-mode' : '');
+    ctxWrap.classList.toggle('visible', !on);
+  }
+
+  function getTriageMode() {
+    return {
+      fitnessMode: document.getElementById('fitnessModeToggle').checked,
+      context: document.getElementById('contextInput').value.trim()
+    };
+  }
+
+  function getDiscoverMode() {
+    return {
+      fitnessMode: document.getElementById('discoverFitnessModeToggle').checked,
+      context: document.getElementById('discoverContextInput').value.trim()
+    };
+  }
+
+  // ── TRIAGE ──
+  function setTriageStatus(text, loading = false) {
+    document.getElementById('triageStatusText').textContent = text;
+    document.getElementById('triageSpinner').classList.toggle('active', loading);
+  }
+
+  function showTriageError(msg) {
+    const el = document.getElementById('triageError');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideTriageError() { document.getElementById('triageError').classList.remove('visible'); }
+
+  function setTriageLoading(loading) {
     document.getElementById('triageBtn').disabled = loading;
-    document.getElementById('extractBtn').disabled = loading || !triageDone;
+    document.getElementById('extractBtn').disabled = loading;
   }
 
   async function runTriage() {
     const url = document.getElementById('urlInput').value.trim();
-    if (!url) { setStatus('paste a url first', 'error'); return; }
+    if (!url) return;
+    const { fitnessMode, context } = getTriageMode();
+    currentFitnessMode = fitnessMode;
+    currentContext = context;
 
-    currentUrl = url;
-    triageDone = false;
-    document.getElementById('results').innerHTML = '';
-    setLoading(true);
-    setStatus('fetching transcript...', 'loading');
+    hideTriageError();
+    setTriageLoading(true);
+    setTriageStatus('Fetching transcript...', true);
+    document.getElementById('triageCard').classList.remove('visible');
+    document.getElementById('extractCard').classList.remove('visible');
 
     try {
+      setTriageStatus('Analysing...', true);
       const res = await fetch(`${WORKER_URL}/triage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, fitnessMode, context })
       });
-
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      setStatus('');
-      renderTriage(data);
-      triageDone = true;
-      document.getElementById('extractBtn').disabled = false;
-
+      if (!res.ok) throw new Error(data.error || 'Triage failed');
+      currentTriageData = data;
+      currentUrl = url;
+      renderTriage(data, fitnessMode, context);
+      setTriageStatus('');
     } catch (err) {
-      setStatus('error: ' + err.message, 'error');
+      showTriageError(err.message);
+      setTriageStatus('');
     } finally {
-      document.getElementById('triageBtn').disabled = false;
+      setTriageLoading(false);
     }
   }
 
   async function runExtract() {
-    const url = document.getElementById('urlInput').value.trim();
-    if (!url) return;
-
-    setLoading(true);
-    setStatus('running deep extract — this takes ~20s...', 'loading');
+    if (!currentUrl) return;
+    hideTriageError();
+    setTriageLoading(true);
+    setTriageStatus('Deep extracting — ~20s...', true);
+    document.getElementById('extractCard').classList.remove('visible');
 
     try {
       const res = await fetch(`${WORKER_URL}/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url: currentUrl, triageData: currentTriageData, fitnessMode: currentFitnessMode, context: currentContext })
       });
-
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      setStatus('');
-      renderExtract(data);
-
+      if (!res.ok) throw new Error(data.error || 'Extraction failed');
+      renderExtract(data, currentFitnessMode);
+      setTriageStatus('');
     } catch (err) {
-      setStatus('error: ' + err.message, 'error');
+      showTriageError(err.message);
+      setTriageStatus('');
     } finally {
-      setLoading(false);
+      setTriageLoading(false);
     }
   }
 
-  function renderTriage(data) {
-    const verdict = (data.verdict || 'SKIP').toUpperCase();
-    const verdictClass = verdict === 'WATCH' ? 'verdict-watch' : verdict === 'SKIM' ? 'verdict-skim' : 'verdict-skip';
-    const duration = data.meta?.duration ? Math.round(data.meta.duration / 60) + ' min' : '—';
-    const useful = data.estimated_useful_minutes ? data.estimated_useful_minutes + ' min useful' : '';
+  function renderTriage(d, fitnessMode, context) {
+    document.getElementById('videoTitle').textContent = d.title;
+    document.getElementById('videoChannel').textContent = `${d.channel} · ~${d.estimatedMinutes} min`;
+    const badge = document.getElementById('verdictBadge');
+    badge.textContent = d.verdict;
+    badge.className = 'verdict-badge verdict-' + d.verdict.toLowerCase();
+    const pill = document.getElementById('triageModePill');
+    pill.textContent = fitnessMode ? 'Fitness/PT' : (context || 'General');
+    pill.className = 'mode-pill ' + (fitnessMode ? 'mode-fitness' : 'mode-general');
+    document.getElementById('triageSummary').textContent = d.summary;
+    document.getElementById('verdictReason').textContent = d.verdict_reason;
+    const qualityMap = { 'Evidence-based': 'quality-evidence', 'Mixed': 'quality-mixed', 'Anecdote-heavy': 'quality-anecdote', 'Bro-science': 'quality-bro' };
+    document.getElementById('qualityBadge').innerHTML = `<span class="quality-badge ${qualityMap[d.quality_signal] || ''}">${d.quality_signal}</span>`;
+    document.getElementById('qualityNotes').textContent = d.quality_notes;
+    document.getElementById('topicsRow').innerHTML = (d.topics || []).map(t => `<span class="topic-chip">${escHtml(t)}</span>`).join('');
+    document.getElementById('triageCard').classList.add('visible');
+  }
 
-    const qs = data.quality_signals || {};
-    const rel = data.relevance || {};
+  function renderList(listId, items, emptyMsg = 'None identified.') {
+    const el = document.getElementById(listId);
+    if (!items || items.length === 0) { el.innerHTML = `<span class="empty-state">${emptyMsg}</span>`; return; }
+    el.innerHTML = items.map(item => `<li>${escHtml(item)}</li>`).join('');
+  }
 
-    const tags = [
-      { label: 'evidence-based', on: qs.evidence_based },
-      { label: 'anecdote-heavy', on: qs.anecdote_heavy, warn: true },
-      { label: '⚠ bro-science', on: qs.bro_science_flagged, warn: true },
-      { label: 'rucking', on: rel.rucking },
-      { label: 'older males', on: rel.older_males_fitness },
-      { label: 'coaching', on: rel.coaching_methods },
-      { label: 'references', on: rel.research_references },
-    ];
+  function renderExtract(d, fitnessMode) {
+    if (d.notionPageUrl) {
+      document.getElementById('notionSection').style.display = 'block';
+      document.getElementById('notionLink').href = d.notionPageUrl;
+    }
 
-    const tagsHTML = tags.map(t => {
-      if (t.warn && t.on) return `<span class="tag tag-warn">${t.label}</span>`;
-      return `<span class="tag ${t.on ? 'tag-on' : 'tag-off'}">${t.label}</span>`;
+    renderList('keyClaimsList', d.key_claims, 'No key claims extracted.');
+    renderList('contentHooksList', d.content_hooks, 'No content hooks identified.');
+    renderList('researchList', d.research_questions, 'No research questions raised.');
+
+    // Ideas section label + content depends on mode
+    document.getElementById('ideasSectionTitle').textContent = fitnessMode ? 'Coaching Ideas' : 'Ideas';
+    const ideas = fitnessMode ? d.coaching_ideas : d.ideas;
+    renderList('ideasList', ideas, 'No ideas identified.');
+
+    const refEl = document.getElementById('referencesList');
+    if (!d.references || d.references.length === 0) {
+      refEl.innerHTML = '<span class="empty-state">No references mentioned.</span>';
+    } else {
+      refEl.innerHTML = d.references.map(r => {
+        const findIcon = r.findability === 'high' ? '🟢' : r.findability === 'medium' ? '🟡' : '🔴';
+        const hint = r.search_hint ? `<div class="ref-hint"><span>${findIcon}</span><span>${escHtml(r.search_hint)}</span></div>` : '';
+        return `<div class="ref-item">
+          <span class="ref-type">${escHtml(r.type)}</span>
+          <div class="ref-content">
+            <div class="ref-name">${escHtml(r.name)}</div>
+            <div class="ref-context">${escHtml(r.context)}</div>
+            ${hint}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    const bsEl = document.getElementById('broScienceList');
+    if (!d.broscience_flags || d.broscience_flags.length === 0) {
+      bsEl.innerHTML = '<span class="empty-state">None flagged.</span>';
+    } else {
+      bsEl.innerHTML = d.broscience_flags.map(f => `<div class="flag-item">${escHtml(f)}</div>`).join('');
+    }
+
+    document.getElementById('extractCard').classList.add('visible');
+    document.getElementById('extractCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── DISCOVER ──
+  function setDiscoverStatus(text, loading = false) {
+    document.getElementById('discoverStatusText').textContent = text;
+    document.getElementById('discoverSpinner').classList.toggle('active', loading);
+  }
+
+  function showDiscoverError(msg) {
+    const el = document.getElementById('discoverError');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideDiscoverError() { document.getElementById('discoverError').classList.remove('visible'); }
+
+  async function runDiscover() {
+    const query = document.getElementById('discoverInput').value.trim();
+    if (!query) return;
+    const count = parseInt(document.getElementById('countSelect').value);
+    const order = document.getElementById('orderSelect').value;
+    const { fitnessMode, context } = getDiscoverMode();
+
+    // Store for pagination
+    discoverLastQuery = query;
+    discoverLastCount = count;
+    discoverLastOrder = order;
+    discoverLastFitnessMode = fitnessMode;
+    discoverLastContext = context;
+    discoverPageToken = null;
+
+    hideDiscoverError();
+    document.getElementById('discoverBtn').disabled = true;
+    document.getElementById('discoverResults').style.display = 'none';
+    document.getElementById('nextPageBtn').style.display = 'none';
+    setDiscoverStatus('Searching YouTube...', true);
+
+    try {
+      const res = await fetch(`${WORKER_URL}/discover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, count, order, pageToken: null })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Search failed');
+      discoverPageToken = data.nextPageToken || null;
+      renderDiscoverResults(data, fitnessMode, context, false);
+      setDiscoverStatus('');
+    } catch (err) {
+      showDiscoverError(err.message);
+      setDiscoverStatus('');
+    } finally {
+      document.getElementById('discoverBtn').disabled = false;
+    }
+  }
+
+  async function runDiscoverNext() {
+    if (!discoverLastQuery || !discoverPageToken) return;
+
+    hideDiscoverError();
+    document.getElementById('nextPageBtn').disabled = true;
+    setDiscoverStatus('Loading next page...', true);
+
+    try {
+      const res = await fetch(`${WORKER_URL}/discover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: discoverLastQuery,
+          count: discoverLastCount,
+          order: discoverLastOrder,
+          pageToken: discoverPageToken
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Search failed');
+      discoverPageToken = data.nextPageToken || null;
+      renderDiscoverResults(data, discoverLastFitnessMode, discoverLastContext, true);
+      setDiscoverStatus('');
+    } catch (err) {
+      showDiscoverError(err.message);
+      setDiscoverStatus('');
+    } finally {
+      document.getElementById('nextPageBtn').disabled = false;
+    }
+  }
+
+  function renderDiscoverResults(data, fitnessMode, context, append = false) {
+    const { videos, query, nextPageToken } = data;
+    const container = document.getElementById('videoCards');
+
+    if (!append) {
+      document.getElementById('resultsHeader').textContent = `${videos.length} results for "${query}"`;
+      container.innerHTML = '';
+    } else {
+      const current = container.querySelectorAll('.video-card').length;
+      document.getElementById('resultsHeader').textContent = `${current + videos.length} results for "${query}"`;
+    }
+
+    if (!videos || videos.length === 0) {
+      if (!append) container.innerHTML = '<span class="empty-state">No videos found.</span>';
+      document.getElementById('nextPageBtn').style.display = 'none';
+      document.getElementById('discoverResults').style.display = 'block';
+      return;
+    }
+
+    container.innerHTML += videos.map(v => {
+      const date = v.publishedAt ? new Date(v.publishedAt).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+      const views = v.viewCount ? parseInt(v.viewCount).toLocaleString() + ' views' : '';
+      const thumb = v.thumbnail
+        ? `<img class="video-thumb" src="${escHtml(v.thumbnail)}" alt="" loading="lazy">`
+        : `<div class="video-thumb-placeholder"></div>`;
+      return `<div class="video-card">
+        ${thumb}
+        <div class="video-info">
+          <div class="video-card-title">${escHtml(v.title)}</div>
+          <div class="video-card-meta">
+            <span>${escHtml(v.channel)}</span>
+            <span>${date}</span>
+            ${v.duration !== '—' ? `<span>${escHtml(v.duration)}</span>` : ''}
+            ${views ? `<span>${views}</span>` : ''}
+          </div>
+          <div class="video-card-actions">
+            <button class="btn-card-triage" onclick="triageFromDiscover('${escHtml(v.url)}', ${fitnessMode}, '${escHtml(context)}')">Triage →</button>
+            <a class="btn-card-url" href="${escHtml(v.url)}" target="_blank">↗ YouTube</a>
+          </div>
+        </div>
+      </div>`;
     }).join('');
 
-    document.getElementById('results').innerHTML = `
-      <div class="video-meta">
-        <div class="meta-item">
-          <span class="meta-key">Title</span>
-          <span class="meta-val">${esc(data.meta?.title || '—')}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-key">Channel</span>
-          <span class="meta-val">${esc(data.meta?.channel || '—')}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-key">Duration</span>
-          <span class="meta-val">${duration}</span>
-        </div>
-      </div>
-
-      <div class="verdict-banner ${verdictClass}">
-        <div>
-          <div class="verdict-label">${verdict}</div>
-          ${useful ? `<div class="verdict-time">${useful}</div>` : ''}
-        </div>
-        <div class="verdict-meta">
-          <div class="verdict-reason">${esc(data.verdict_reason || '')}</div>
-        </div>
-      </div>
-
-      ${makeCard('Summary', `<p>${esc(data.summary || '')}</p>`, true)}
-
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-label">Signals & Relevance</span>
-          <span class="card-chevron">▼</span>
-        </div>
-        <div class="card-body">
-          <div class="tags">${tagsHTML}</div>
-          ${qs.bro_science_flagged && qs.bro_science_detail ? `<p style="color:var(--accent2);margin-top:12px;font-size:0.8rem;">${esc(qs.bro_science_detail)}</p>` : ''}
-        </div>
-      </div>
-
-      <div class="extract-prompt">
-        <p>Worth going deeper? Run a full extract to pull claims, references, and coaching ideas → logs to Notion.</p>
-        <button class="btn btn-primary" onclick="runExtract()">↓ Extract</button>
-      </div>
-    `;
+    document.getElementById('discoverResults').style.display = 'block';
   }
 
-  function renderExtract(data) {
-    const existingExtract = document.getElementById('extract-section');
-    if (existingExtract) existingExtract.remove();
-
-    const refs = data.references || {};
-    const hasRefs = (refs.books?.length || refs.studies?.length || refs.people?.length || refs.channels?.length);
-
-    const refsHTML = hasRefs ? `
-      ${refs.books?.length ? `<div class="ref-group"><div class="ref-label">Books</div>${refs.books.map(r => `<div class="ref-item">${esc(r)}</div>`).join('')}</div>` : ''}
-      ${refs.studies?.length ? `<div class="ref-group"><div class="ref-label">Studies</div>${refs.studies.map(r => `<div class="ref-item">${esc(r)}</div>`).join('')}</div>` : ''}
-      ${refs.people?.length ? `<div class="ref-group"><div class="ref-label">People</div>${refs.people.map(r => `<div class="ref-item">${esc(r)}</div>`).join('')}</div>` : ''}
-      ${refs.channels?.length ? `<div class="ref-group"><div class="ref-label">Channels</div>${refs.channels.map(r => `<div class="ref-item">${esc(r)}</div>`).join('')}</div>` : ''}
-    ` : '<p>No references found.</p>';
-
-    const bsFlags = data.bro_science_flags || [];
-
-    const section = document.createElement('div');
-    section.id = 'extract-section';
-    section.innerHTML = `
-      <div class="section-divider">— deep extract —</div>
-
-      ${makeCard('Summary', `<p>${esc(data.summary || '')}</p>`, true)}
-      ${makeCard('Key Claims', listHTML(data.key_claims, false), false)}
-      ${makeCard('References', refsHTML, false)}
-      ${makeCard('Coaching Ideas', listHTML(data.coaching_ideas, false), false)}
-      ${makeCard('Content Ideas', listHTML(data.content_ideas, false), false)}
-      ${makeCard('Research Questions', listHTML(data.research_questions, false), false)}
-      ${bsFlags.length ? makeCard('⚠ Bro-Science Flags', listHTML(bsFlags, true), true) : ''}
-
-      <div class="notion-badge saved">✓ logged to notion · YT Research Library</div>
-    `;
-
-    document.getElementById('results').appendChild(section);
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function triageFromDiscover(url, fitnessMode, context) {
+    switchTab('triage');
+    document.getElementById('urlInput').value = url;
+    // Sync mode from discover to triage
+    document.getElementById('fitnessModeToggle').checked = fitnessMode;
+    document.getElementById('contextInput').value = context || '';
+    updateModeUI();
+    runTriage();
   }
 
-  function makeCard(label, bodyHTML, open = false) {
-    return `
-      <div class="card ${open ? 'open' : ''}">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-label">${label}</span>
-          <span class="card-chevron">▼</span>
-        </div>
-        <div class="card-body">${bodyHTML}</div>
-      </div>
-    `;
-  }
-
-  function listHTML(arr, warn = false) {
-    if (!arr || !arr.length) return '<p>None found.</p>';
-    return `<ul>${arr.map(item => `
-      <li>
-        <span class="li-bullet ${warn ? 'li-warn' : ''}">›</span>
-        <span>${esc(item)}</span>
-      </li>
-    `).join('')}</ul>`;
-  }
-
-  function toggleCard(header) {
-    header.closest('.card').classList.toggle('open');
-  }
-
-  function esc(str) {
-    if (!str) return '';
+  function escHtml(str) {
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Allow Enter key
-  document.getElementById('urlInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') runTriage();
-  });
+  document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') runTriage(); });
+  document.getElementById('discoverInput').addEventListener('keydown', e => { if (e.key === 'Enter') runDiscover(); });
 </script>
 </body>
 </html>
